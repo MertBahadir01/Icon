@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Resizer & ICO Converter</title>
+
+<style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #111;
+        color: #fff;
+        display: flex;
+        justify-content: center;
+        padding: 40px 20px;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 900px;
+    }
+
+    h1 {
+        margin: 0 0 8px;
+        font-size: 30px;
+    }
+
+    .subtitle {
+        color: #999;
+        margin-bottom: 30px;
+    }
+
+    .drop-zone {
+        border: 2px dashed #444;
+        border-radius: 16px;
+        padding: 50px 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: 0.2s;
+        background: #181818;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.dragover {
+        border-color: #fff;
+        background: #202020;
+    }
+
+    .drop-icon {
+        font-size: 45px;
+        margin-bottom: 15px;
+    }
+
+    .drop-zone p {
+        margin: 8px 0;
+    }
+
+    .muted {
+        color: #888;
+        font-size: 14px;
+    }
+
+    input[type="file"] {
+        display: none;
+    }
+
+    .panel {
+        margin-top: 20px;
+        background: #181818;
+        border-radius: 16px;
+        padding: 22px;
+    }
+
+    .panel-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 18px;
+    }
+
+    .dimensions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .field label {
+        display: block;
+        color: #aaa;
+        font-size: 13px;
+        margin-bottom: 7px;
+    }
+
+    .field input,
+    select {
+        width: 100%;
+        background: #101010;
+        color: white;
+        border: 1px solid #333;
+        border-radius: 9px;
+        padding: 12px;
+        font-size: 16px;
+        outline: none;
+    }
+
+    .field input:focus,
+    select:focus {
+        border-color: #777;
+    }
+
+    .checkbox {
+        margin-top: 15px;
+        display: flex;
+        align-items: center;
+        gap: 9px;
+        color: #bbb;
+        cursor: pointer;
+    }
+
+    .checkbox input {
+        width: 17px;
+        height: 17px;
+    }
+
+    .info {
+        margin-top: 15px;
+        padding: 12px;
+        border-radius: 9px;
+        background: #101010;
+        color: #999;
+        font-size: 14px;
+    }
+
+    .preview {
+        margin-top: 20px;
+        background:
+            linear-gradient(45deg, #222 25%, transparent 25%),
+            linear-gradient(-45deg, #222 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #222 75%),
+            linear-gradient(-45deg, transparent 75%, #222 75%);
+        background-size: 24px 24px;
+        background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+        border-radius: 12px;
+        min-height: 250px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        padding: 20px;
+    }
+
+    .preview img {
+        max-width: 100%;
+        max-height: 450px;
+        object-fit: contain;
+        box-shadow: 0 5px 30px rgba(0,0,0,0.5);
+    }
+
+    .buttons {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 20px;
+    }
+
+    button {
+        border: none;
+        border-radius: 10px;
+        padding: 14px 18px;
+        font-size: 15px;
+        font-weight: bold;
+        cursor: pointer;
+        background: #fff;
+        color: #111;
+        transition: 0.15s;
+    }
+
+    button:hover {
+        transform: translateY(-1px);
+        opacity: 0.9;
+    }
+
+    button.secondary {
+        background: #292929;
+        color: white;
+    }
+
+    button.ico {
+        background: #e33;
+        color: white;
+    }
+
+    button:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .hidden {
+        display: none;
+    }
+
+    .file-info {
+        display: flex;
+        justify-content: space-between;
+        gap: 15px;
+        flex-wrap: wrap;
+        color: #aaa;
+        font-size: 14px;
+        margin-top: 15px;
+    }
+
+    .quality-row {
+        margin-top: 15px;
+    }
+
+    .quality-row label {
+        color: #aaa;
+        font-size: 13px;
+    }
+
+    input[type="range"] {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    @media (max-width: 600px) {
+        .dimensions,
+        .buttons {
+            grid-template-columns: 1fr;
+        }
+
+        body {
+            padding: 20px 12px;
+        }
+    }
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>Image Resizer</h1>
+    <div class="subtitle">
+        Resize images and convert them to ICO — completely in your browser.
+    </div>
+
+    <div class="drop-zone" id="dropZone">
+        <div class="drop-icon">🖼️</div>
+        <p><strong>Drop an image here</strong></p>
+        <p class="muted">or click to select a file</p>
+        <p class="muted">PNG, JPG, JPEG, WEBP, GIF</p>
+
+        <input type="file" id="fileInput" accept="image/*">
+    </div>
+
+    <div id="editor" class="hidden">
+
+        <div class="panel">
+
+            <div class="panel-title">Dimensions</div>
+
+            <div class="dimensions">
+
+                <div class="field">
+                    <label>Width (px)</label>
+                    <input
+                        type="number"
+                        id="widthInput"
+                        min="1"
+                        max="10000"
+                    >
+                </div>
+
+                <div class="field">
+                    <label>Height (px)</label>
+                    <input
+                        type="number"
+                        id="heightInput"
+                        min="1"
+                        max="10000"
+                    >
+                </div>
+
+            </div>
+
+            <label class="checkbox">
+                <input type="checkbox" id="lockRatio" checked>
+                Keep aspect ratio
+            </label>
+
+            <div class="info" id="originalInfo"></div>
+
+            <div class="quality-row">
+                <label>
+                    JPG/WebP Quality:
+                    <strong id="qualityValue">90%</strong>
+                </label>
+
+                <input
+                    type="range"
+                    id="quality"
+                    min="10"
+                    max="100"
+                    value="90"
+                >
+            </div>
+
+        </div>
+
+        <div class="panel">
+
+            <div class="panel-title">Preview</div>
+
+            <div class="preview">
+                <img id="previewImage">
+            </div>
+
+            <div class="file-info">
+                <span id="outputDimensions"></span>
+                <span id="outputSize"></span>
+            </div>
+
+        </div>
+
+        <div class="panel">
+
+            <div class="panel-title">Export</div>
+
+            <div class="buttons">
+
+                <button id="pngButton">
+                    Download PNG
+                </button>
+
+                <button id="jpgButton" class="secondary">
+                    Download JPG
+                </button>
+
+                <button id="webpButton" class="secondary">
+                    Download WebP
+                </button>
+
+                <button id="icoButton" class="ico">
+                    Download ICO
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+let originalImage = null;
+let originalFileName = "image";
+
+const fileInput = document.getElementById("fileInput");
+const dropZone = document.getElementById("dropZone");
+
+const editor = document.getElementById("editor");
+
+const widthInput = document.getElementById("widthInput");
+const heightInput = document.getElementById("heightInput");
+
+const lockRatio = document.getElementById("lockRatio");
+
+const previewImage = document.getElementById("previewImage");
+
+const originalInfo = document.getElementById("originalInfo");
+const outputDimensions = document.getElementById("outputDimensions");
+const outputSize = document.getElementById("outputSize");
+
+const quality = document.getElementById("quality");
+const qualityValue = document.getElementById("qualityValue");
+
+
+// ---------------------------------------------------------
+// FILE SELECTION
+// ---------------------------------------------------------
+
+dropZone.addEventListener("click", () => {
+    fileInput.click();
+});
+
+fileInput.addEventListener("change", event => {
+
+    const file = event.target.files[0];
+
+    if (file) {
+        loadImage(file);
+    }
+});
+
+
+// ---------------------------------------------------------
+// DRAG & DROP
+// ---------------------------------------------------------
+
+dropZone.addEventListener("dragover", event => {
+
+    event.preventDefault();
+
+    dropZone.classList.add("dragover");
+
+});
+
+dropZone.addEventListener("dragleave", () => {
+
+    dropZone.classList.remove("dragover");
+
+});
+
+dropZone.addEventListener("drop", event => {
+
+    event.preventDefault();
+
+    dropZone.classList.remove("dragover");
+
+    const file = event.dataTransfer.files[0];
+
+    if (file && file.type.startsWith("image/")) {
+        loadImage(file);
+    }
+
+});
+
+
+// ---------------------------------------------------------
+// LOAD IMAGE
+// ---------------------------------------------------------
+
+function loadImage(file) {
+
+    originalFileName =
+        file.name.replace(/\.[^/.]+$/, "");
+
+    const url = URL.createObjectURL(file);
+
+    const img = new Image();
+
+    img.onload = () => {
+
+        originalImage = img;
+
+        widthInput.value = img.naturalWidth;
+        heightInput.value = img.naturalHeight;
+
+        originalInfo.innerHTML =
+            `Original: <strong>${img.naturalWidth} × ${img.naturalHeight}</strong> px`;
+
+        previewImage.src = url;
+
+        editor.classList.remove("hidden");
+
+        updatePreview();
+
+    };
+
+    img.src = url;
+}
+
+
+// ---------------------------------------------------------
+// DIMENSION INPUTS
+// ---------------------------------------------------------
+
+widthInput.addEventListener("input", () => {
+
+    if (!originalImage) return;
+
+    if (lockRatio.checked) {
+
+        const width = parseInt(widthInput.value);
+
+        if (width > 0) {
+
+            const ratio =
+                originalImage.naturalHeight /
+                originalImage.naturalWidth;
+
+            heightInput.value =
+                Math.round(width * ratio);
+
+        }
+
+    }
+
+    updatePreview();
+
+});
+
+
+heightInput.addEventListener("input", () => {
+
+    if (!originalImage) return;
+
+    if (lockRatio.checked) {
+
+        const height = parseInt(heightInput.value);
+
+        if (height > 0) {
+
+            const ratio =
+                originalImage.naturalWidth /
+                originalImage.naturalHeight;
+
+            widthInput.value =
+                Math.round(height * ratio);
+
+        }
+
+    }
+
+    updatePreview();
+
+});
+
+
+// ---------------------------------------------------------
+// QUALITY
+// ---------------------------------------------------------
+
+quality.addEventListener("input", () => {
+
+    qualityValue.textContent =
+        quality.value + "%";
+
+    updatePreview();
+
+});
+
+
+// ---------------------------------------------------------
+// CREATE CANVAS
+// ---------------------------------------------------------
+
+function createCanvas() {
+
+    if (!originalImage) return null;
+
+    let width = parseInt(widthInput.value);
+    let height = parseInt(heightInput.value);
+
+    if (!width || !height || width < 1 || height < 1) {
+        return null;
+    }
+
+    const canvas = document.createElement("canvas");
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext("2d");
+
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+
+    /*
+        Transparent background is intentionally used.
+
+        This means PNG and ICO preserve transparency.
+    */
+
+    ctx.clearRect(0, 0, width, height);
+
+    ctx.drawImage(
+        originalImage,
+        0,
+        0,
+        width,
+        height
+    );
+
+    return canvas;
+}
+
+
+// ---------------------------------------------------------
+// PREVIEW
+// ---------------------------------------------------------
+
+function updatePreview() {
+
+    const canvas = createCanvas();
+
+    if (!canvas) return;
+
+    previewImage.src =
+        canvas.toDataURL("image/png");
+
+    outputDimensions.textContent =
+        `${canvas.width} × ${canvas.height} px`;
+
+    canvas.toBlob(blob => {
+
+        if (blob) {
+
+            outputSize.textContent =
+                formatBytes(blob.size);
+
+        }
+
+    }, "image/png");
+
+}
+
+
+// ---------------------------------------------------------
+// DOWNLOAD NORMAL IMAGE
+// ---------------------------------------------------------
+
+function downloadImage(type) {
+
+    const canvas = createCanvas();
+
+    if (!canvas) return;
+
+    let mime;
+    let extension;
+
+    switch (type) {
+
+        case "png":
+            mime = "image/png";
+            extension = "png";
+            break;
+
+        case "jpg":
+            mime = "image/jpeg";
+            extension = "jpg";
+            break;
+
+        case "webp":
+            mime = "image/webp";
+            extension = "webp";
+            break;
+    }
+
+    const q =
+        parseInt(quality.value) / 100;
+
+    canvas.toBlob(blob => {
+
+        if (!blob) return;
+
+        downloadBlob(
+            blob,
+            `${originalFileName}_${canvas.width}x${canvas.height}.${extension}`
+        );
+
+    }, mime, q);
+
+}
+
+
+// ---------------------------------------------------------
+// BUTTONS
+// ---------------------------------------------------------
+
+document.getElementById("pngButton")
+    .addEventListener("click", () => {
+
+        downloadImage("png");
+
+    });
+
+
+document.getElementById("jpgButton")
+    .addEventListener("click", () => {
+
+        downloadImage("jpg");
+
+    });
+
+
+document.getElementById("webpButton")
+    .addEventListener("click", () => {
+
+        downloadImage("webp");
+
+    });
+
+
+// ---------------------------------------------------------
+// ICO CREATOR
+// ---------------------------------------------------------
+
+async function createICO() {
+
+    if (!originalImage) return;
+
+    /*
+        Standard Windows icon sizes.
+
+        We create a multi-image ICO containing:
+        16x16
+        24x24
+        32x32
+        48x48
+        64x64
+        128x128
+        256x256
+    */
+
+    const sizes = [
+        16,
+        24,
+        32,
+        48,
+        64,
+        128,
+        256
+    ];
+
+    const pngFiles = [];
+
+    for (const size of sizes) {
+
+        const canvas =
+            document.createElement("canvas");
+
+        canvas.width = size;
+        canvas.height = size;
+
+        const ctx =
+            canvas.getContext("2d");
+
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+
+        /*
+            ICO icons are square.
+
+            We use "contain" behavior here so the
+            complete image remains visible.
+
+            Transparent areas are added where necessary.
+        */
+
+        ctx.clearRect(0, 0, size, size);
+
+        const scale = Math.min(
+            size / originalImage.naturalWidth,
+            size / originalImage.naturalHeight
+        );
+
+        const drawWidth =
+            originalImage.naturalWidth * scale;
+
+        const drawHeight =
+            originalImage.naturalHeight * scale;
+
+        const x =
+            (size - drawWidth) / 2;
+
+        const y =
+            (size - drawHeight) / 2;
+
+        ctx.drawImage(
+            originalImage,
+            x,
+            y,
+            drawWidth,
+            drawHeight
+        );
+
+        const blob =
+            await canvasToBlob(
+                canvas,
+                "image/png"
+            );
+
+        const arrayBuffer =
+            await blob.arrayBuffer();
+
+        pngFiles.push({
+            size: size,
+            data: new Uint8Array(arrayBuffer)
+        });
+
+    }
+
+    const ico =
+        buildICO(pngFiles);
+
+    const blob =
+        new Blob(
+            [ico],
+            { type: "image/x-icon" }
+        );
+
+    downloadBlob(
+        blob,
+        `${originalFileName}.ico`
+    );
+
+}
+
+
+// ---------------------------------------------------------
+// BUILD ICO FILE
+// ---------------------------------------------------------
+
+function buildICO(images) {
+
+    /*
+        ICO format:
+
+        ICONDIR
+        ICONDIRENTRY[]
+        PNG data[]
+    */
+
+    const headerSize = 6;
+
+    const directorySize =
+        images.length * 16;
+
+    let dataOffset =
+        headerSize + directorySize;
+
+    let totalSize =
+        dataOffset;
+
+    for (const image of images) {
+        totalSize += image.data.length;
+    }
+
+    const buffer =
+        new ArrayBuffer(totalSize);
+
+    const view =
+        new DataView(buffer);
+
+    const bytes =
+        new Uint8Array(buffer);
+
+    // ICONDIR
+
+    view.setUint16(0, 0, true); // Reserved
+    view.setUint16(2, 1, true); // Type = icon
+    view.setUint16(4, images.length, true);
+
+    let entryOffset = 6;
+
+    for (const image of images) {
+
+        let widthByte =
+            image.size >= 256
+                ? 0
+                : image.size;
+
+        let heightByte =
+            image.size >= 256
+                ? 0
+                : image.size;
+
+        // Width
+        bytes[entryOffset] =
+            widthByte;
+
+        // Height
+        bytes[entryOffset + 1] =
+            heightByte;
+
+        // Color count
+        bytes[entryOffset + 2] = 0;
+
+        // Reserved
+        bytes[entryOffset + 3] = 0;
+
+        // Color planes
+        view.setUint16(
+            entryOffset + 4,
+            1,
+            true
+        );
+
+        // Bits per pixel
+        view.setUint16(
+            entryOffset + 6,
+            32,
+            true
+        );
+
+        // Image size
+        view.setUint32(
+            entryOffset + 8,
+            image.data.length,
+            true
+        );
+
+        // Image offset
+        view.setUint32(
+            entryOffset + 12,
+            dataOffset,
+            true
+        );
+
+        entryOffset += 16;
+
+        bytes.set(
+            image.data,
+            dataOffset
+        );
+
+        dataOffset += image.data.length;
+
+    }
+
+    return buffer;
+}
+
+
+// ---------------------------------------------------------
+// UTILITIES
+// ---------------------------------------------------------
+
+function canvasToBlob(canvas, type) {
+
+    return new Promise(resolve => {
+
+        canvas.toBlob(
+            resolve,
+            type
+        );
+
+    });
+
+}
+
+
+function downloadBlob(blob, filename) {
+
+    const url =
+        URL.createObjectURL(blob);
+
+    const a =
+        document.createElement("a");
+
+    a.href = url;
+    a.download = filename;
+
+    document.body.appendChild(a);
+
+    a.click();
+
+    a.remove();
+
+    setTimeout(() => {
+        URL.revokeObjectURL(url);
+    }, 1000);
+
+}
+
+
+function formatBytes(bytes) {
+
+    if (bytes === 0) {
+        return "0 Bytes";
+    }
+
+    const sizes = [
+        "Bytes",
+        "KB",
+        "MB",
+        "GB"
+    ];
+
+    const i =
+        Math.floor(
+            Math.log(bytes) /
+            Math.log(1024)
+        );
+
+    return (
+        parseFloat(
+            (bytes /
+            Math.pow(1024, i))
+            .toFixed(2)
+        )
+        + " "
+        + sizes[i]
+    );
+
+}
+
+
+// ---------------------------------------------------------
+// ICO BUTTON
+// ---------------------------------------------------------
+
+document.getElementById("icoButton")
+    .addEventListener("click", async () => {
+
+        const button =
+            document.getElementById("icoButton");
+
+        const oldText =
+            button.textContent;
+
+        button.disabled = true;
+        button.textContent =
+            "Creating ICO...";
+
+        try {
+
+            await createICO();
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert(
+                "Could not create the ICO file."
+            );
+
+        }
+
+        button.disabled = false;
+        button.textContent = oldText;
+
+    });
+
+</script>
+
+</body>
+</html>
